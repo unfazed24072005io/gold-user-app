@@ -1,0 +1,61 @@
+name: Build Android APK
+
+on:
+  push:
+    branches:
+      - main   # or your default branch
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Setup JDK 17
+        uses: actions/setup-java@v3
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Install dependencies (User App)
+        working-directory: ./user-app
+        run: npm install
+
+      - name: Build User App
+        working-directory: ./user-app
+        run: |
+          npm run build
+          npx cap copy android
+          cd android
+          ./gradlew assembleRelease
+
+      - name: Upload User APK
+        uses: actions/upload-artifact@v3
+        with:
+          name: user-app-release
+          path: ./user-app/android/app/build/outputs/apk/release/app-release-unsigned.apk
+
+      - name: Install dependencies (Admin App)
+        working-directory: ./admin-app
+        run: npm install
+
+      - name: Build Admin App
+        working-directory: ./admin-app
+        run: |
+          npm run build
+          npx cap copy android
+          cd android
+          ./gradlew assembleRelease
+
+      - name: Upload Admin APK
+        uses: actions/upload-artifact@v3
+        with:
+          name: admin-app-release
+          path: ./admin-app/android/app/build/outputs/apk/release/app-release-unsigned.apk
